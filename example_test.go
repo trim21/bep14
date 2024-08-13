@@ -1,4 +1,4 @@
-package main
+package bep14
 
 import (
 	"fmt"

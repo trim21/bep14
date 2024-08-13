@@ -1,7 +1,6 @@
 //go:build !unix
-// +build !unix
 
-package main
+package bep14
 
 import (
 	"fmt"

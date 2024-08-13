@@ -1,4 +1,4 @@
-package main
+package bep14
 
 import (
 	"bufio"
@@ -133,24 +133,25 @@ func (l *LSP) handleMsg(buf []byte, remote net.Addr) {
 	}
 }
 
+var pool = sync.Pool{New: func() any {
+	return bytes.NewBuffer(make([]byte, 0, 1400))
+}}
+
 func (l *LSP) Announce(infoHashes []string) error {
 	return multierr.Append(l.announce4(infoHashes), l.announce6(infoHashes))
 }
+
+const sep = "\r\n"
 
 func (l *LSP) announce4(infoHashes []string) error {
 	if l.conn4 == nil {
 		return nil
 	}
 
-	h := http.Header{}
-	h.Set("Port", l.clientPort)
-	h[hdrInfohash] = infoHashes
-	h.Set("Cookie", l.selfCookie)
-	h.Set("Host", host4)
-
-	var b = bytes.NewBufferString(btSearchLine)
-	_ = h.Write(b)
-	b.WriteString("\r\n")
+	var b = pool.Get().(*bytes.Buffer)
+	defer pool.Put(b)
+	b.Reset()
+	l.encodeMessage(b, host6, infoHashes)
 
 	_, err := l.conn4.WriteTo(b.Bytes(), addr4)
 	return err
@@ -161,18 +162,40 @@ func (l *LSP) announce6(infoHashes []string) error {
 		return nil
 	}
 
-	h := http.Header{}
-	h.Set("Port", l.clientPort)
-	h[hdrInfohash] = infoHashes
-	h.Set("Cookie", l.selfCookie)
-	h.Set("Host", host6)
-
-	var b = bytes.NewBufferString(btSearchLine)
-	_ = h.Write(b)
-	b.WriteString("\r\n")
+	var b = pool.Get().(*bytes.Buffer)
+	defer pool.Put(b)
+	b.Reset()
+	l.encodeMessage(b, host6, infoHashes)
 
 	_, err := l.conn6.WriteTo(b.Bytes(), addr4)
 	return err
+}
+
+func (l *LSP) encodeMessage(b *bytes.Buffer, host string, infoHashes []string) {
+	b.WriteString(btSearchLine)
+
+	b.WriteString("host: ")
+	b.WriteString(host)
+	b.WriteString(sep)
+
+	b.WriteString("port: ")
+	b.WriteString(l.clientPort)
+	b.WriteString(sep)
+
+	b.WriteString("cookie: ")
+	b.WriteString(l.selfCookie)
+	b.WriteString(sep)
+
+	b.WriteString("ihash: ")
+	for i, ih := range infoHashes {
+		b.WriteString(ih)
+		if i != len(infoHashes)-1 {
+			b.WriteString(",")
+		}
+	}
+	b.WriteString(sep)
+
+	b.WriteString(sep)
 }
 
 type config struct {
