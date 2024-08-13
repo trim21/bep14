@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha1"
+	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -104,10 +107,26 @@ func (l *LSP) handleMsg(buf []byte, remote net.Addr) {
 		return
 	}
 
-	ih := r.Header.Values(hdrInfohash)
-
+	ih := parseList(r.Header[hdrInfohash])
 	if len(ih) == 0 {
 		return
+	}
+
+	for _, h := range ih {
+		switch len(h) {
+		case sha1.Size * 2, sha256.Size * 2:
+		default:
+			return
+		}
+
+		// validate hex
+		for i := 0; i < len(h); i++ {
+			ch := h[i]
+			// 0123456789 abcdef ABCDEF
+			if ('0' <= ch && ch <= '9') || ('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F') {
+				continue
+			}
+		}
 	}
 
 	rawPort := r.Header.Get(hdrPort)
@@ -138,6 +157,10 @@ var pool = sync.Pool{New: func() any {
 }}
 
 func (l *LSP) Announce(infoHashes []string) error {
+	if len(infoHashes) == 0 {
+		return errors.New("no infohash to announce")
+	}
+
 	return multierr.Append(l.announce4(infoHashes), l.announce6(infoHashes))
 }
 
@@ -187,10 +210,14 @@ func (l *LSP) encodeMessage(b *bytes.Buffer, host string, infoHashes []string) {
 	b.WriteString(sep)
 
 	b.WriteString("ihash: ")
-	for i, ih := range infoHashes {
-		b.WriteString(ih)
-		if i != len(infoHashes)-1 {
-			b.WriteString(",")
+	switch len(infoHashes) {
+	case 1:
+		b.WriteString(infoHashes[0])
+	default:
+		b.WriteString(infoHashes[0])
+		for _, ih := range infoHashes[1:] {
+			b.WriteString(", ")
+			b.WriteString(ih)
 		}
 	}
 	b.WriteString(sep)
