@@ -16,7 +16,7 @@ func TestWriteHeader(t *testing.T) {
 		clientPort: "100",
 		selfCookie: "0123456",
 	}
-	l.encodeMessage(b, "host4", []string{"ih"})
+	l.encodeMessage(b, "host4", []string{"h1", "h2"})
 
 	req, err := http.ReadRequest(bufio.NewReader(b))
 	if err != nil {
