@@ -1,0 +1,4 @@
+.task/
+.vscode/
+.idea/
+dist/
