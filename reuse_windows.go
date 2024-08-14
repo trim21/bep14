@@ -13,7 +13,7 @@ func reusePort(s uintptr) {
 		return
 	}
 
-	if errReusePort := syscall.SetsockoptInt(syscall.Handle(s), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1); errReusePort != nil {
+	if errReusePort := syscall.SetsockoptInt(syscall.Handle(s), syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1); errReusePort != nil {
 		fmt.Printf("reuse port error: %v\n", errReusePort)
 		return
 	}
