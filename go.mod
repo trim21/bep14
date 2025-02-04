@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/sys v0.27.0
+	golang.org/x/sys v0.30.0
 )
 
 require (
