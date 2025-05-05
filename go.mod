@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/sys v0.32.0
+	golang.org/x/sys v0.33.0
 )
 
 require (
